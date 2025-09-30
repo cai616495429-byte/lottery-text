@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8" />
+  <title>中秋节抽奖转盘</title>
+  <style>
+    body {
+      background: url('https://img.zcool.cn/community/01b5d25f67b4d7a8012141685efde7.jpg') no-repeat center center;
+      background-size: cover;
+      font-family: 'Microsoft YaHei', sans-serif;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+      color: #fff;
+    }
+    .container {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+    }
+    .wheel {
+      width: 400px;
+      height: 400px;
+      border-radius: 50%;
+      border: 10px solid gold;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 0 20px gold;
+      margin: 0 auto;
+    }
+    .segment {
+      position: absolute;
+      width: 50%;
+      height: 50%;
+      top: 50%;
+      left: 50%;
+      transform-origin: 0% 0%;
+      text-align: right;
+      padding-right: 20px;
+      font-weight: bold;
+    }
+    .btn {
+      margin-top: 30px;
+      padding: 15px 40px;
+      font-size: 20px;
+      background-color: crimson;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+    }
+    .btn:hover {
+      background-color: darkred;
+    }
+    .pointer {
+      width: 0;
+      height: 0;
+      border-left: 20px solid transparent;
+      border-right: 20px solid transparent;
+      border-bottom: 40px solid gold;
+      position: absolute;
+      top: -30px;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+    #record {
+      margin-top: 20px;
+      font-size: 18px;
+      color: #fff3c0;
+    }
+    .music-control {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: rgba(0,0,0,0.5);
+      padding: 8px 12px;
+      border-radius: 8px;
+      color: #fff;
+      font-size: 16px;
+      cursor: pointer;
+      user-select: none;
+      z-index: 1000;
+    }
+  </style>
+</head>
+<body>
+  <div class="music-control" onclick="toggleMusic()">🔊 播放音乐</div>
+
+  <div class="container">
+    <div class="wheel" id="wheel">
+      <div class="pointer"></div>
+    </div>
+    <button class="btn" onclick="spin()">点击抽奖</button>
+    <div id="record"></div>
+  </div>
+
+  <!-- 🎵 背景音乐 -->
+  <audio id="bgm" loop>
+    <source src="https://cdn.pixabay.com/audio/2022/10/16/audio_91f243b270.mp3" type="audio/mpeg" />
+    您的浏览器不支持音频播放。
+  </audio>
+
+  <script>
+    const prizes = [18, 28, 38, 58, 88, 138, 158, 188];
+    const colors = ['#D32F2F', '#C2185B', '#7B1FA2', '#512DA8', '#1976D2', '#00796B', '#F57C00', '#E64A19'];
+    const wheel = document.getElementById('wheel');
+    const recordDiv = document.getElementById('record');
+    const bgm = document.getElementById('bgm');
+    const musicBtn = document.querySelector('.music-control');
+    let angle = 0;
+    let spinning = false;
+    let musicPlaying = false;
+
+    function getToday() {
+      const today = new Date();
+      return today.toISOString().split('T')[0]; // YYYY-MM-DD
+    }
+
+    function checkTodaySpin() {
+      const today = getToday();
+      const lastSpinDate = localStorage.getItem('spinDate');
+      const prize = localStorage.getItem('spinPrize');
+      if (lastSpinDate === today && prize) {
+        recordDiv.innerHTML = `🎉 您今天已经抽过奖：<strong>¥${prize}</strong>`;
+        return true;
+      }
+      return false;
+    }
+
+    function createSegments() {
+      const step = 360 / prizes.length;
+      for (let i = 0; i < prizes.length; i++) {
+        const seg = document.createElement('div');
+        seg.className = 'segment';
+        seg.style.transform = `rotate(${i * step}deg) skewY(${90 - step}deg)`;
+        seg.style.backgroundColor = colors[i % colors.length];
+
+        const text = document.createElement('div');
+        text.innerText = `¥${prizes[i]}`;
+        text.style.transform = `skewY(-${90 - step}deg) rotate(${step / 2}deg)`;
+        text.style.display = 'inline-block';
+        text.style.color = '#fff';
+        text.style.fontSize = '20px';
+        text.style.fontWeight = 'bold';
+        text.style.position = 'absolute';
+        text.style.top = '40%';
+        text.style.right = '10px';
+        text.style.whiteSpace = 'nowrap';
+
+        seg.appendChild(text);
+        wheel.appendChild(seg);
+      }
+    }
+
+    function spin() {
+      if (spinning) return;
+
+      // 尝试播放音乐（用户点击时）
+      if (!musicPlaying) {
+        bgm.play().then(() => {
+          musicPlaying = true;
+          musicBtn.textContent = '🔈 暂停音乐';
+        }).catch(() => {});
+      }
+
+      if (checkTodaySpin()) {
+        alert("今天已经抽过奖啦，明天再来哦！");
+        return;
+      }
+
+      spinning = true;
+      const randomIndex = Math.floor(Math.random() * prizes.length);
+      const degPerPrize = 360 / prizes.length;
+      const rotateTo = 360 * 5 + (360 - randomIndex * degPerPrize - degPerPrize / 2);
+
+      angle += rotateTo;
+      wheel.style.transition = 'transform 5s ease-out';
+      wheel.style.transform = `rotate(${angle}deg)`;
+
+      setTimeout(() => {
+        const prize = prizes[randomIndex];
+        alert(`恭喜你抽中了 ¥${prize}！`);
+        localStorage.setItem('spinDate', getToday());
+        localStorage.setItem('spinPrize', prize);
+        recordDiv.innerHTML = `🎉 您今天已经抽过奖：<strong>¥${prize}</strong>`;
+        spinning = false;
+      }, 5200);
+    }
+
+    function toggleMusic() {
+      if (musicPlaying) {
+        bgm.pause();
+        musicPlaying = false;
+        musicBtn.textContent = '🔇 播放音乐';
+      } else {
+        bgm.play().then(() => {
+          musicPlaying = true;
+          musicBtn.textContent = '🔈 暂停音乐';
+        }).catch(() => {
+          alert("浏览器不允许自动播放，请先点击页面任意位置再试一次。");
+        });
+      }
+    }
+
+    createSegments();
+    checkTodaySpin();
+  </script>
+</body>
+</html>
